@@ -1,9 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Put,
+} from '@nestjs/common';
 import { ChildService } from './child.service';
 import { CreateChildDto } from './dto/create-child.dto';
 import { UpdateChildDto } from './dto/update-child.dto';
 
-@Controller('child')
+@Controller('children')
 export class ChildController {
   constructor(private readonly childService: ChildService) {}
 
@@ -17,6 +26,20 @@ export class ChildController {
     return this.childService.findAll();
   }
 
+  @Put(':childID/toys/:toyID')
+  putToyToChild(
+    @Param('childID') childID: string,
+    @Param('toyID') toyID: string,
+  ) {
+    return this.childService.putToyToChild(+childID, +toyID);
+  }
+  @Delete(':childID/toys/:toyID')
+  removeToyFromChild(
+    @Param('childID') childID: string,
+    @Param('toyID') toyID: string,
+  ) {
+    return this.childService.removeToyFromChild(+childID, +toyID);
+  }
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.childService.findOne(+id);
