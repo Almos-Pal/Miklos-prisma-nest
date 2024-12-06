@@ -1,26 +1,108 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateToyDto } from './dto/create-toy.dto';
 import { UpdateToyDto } from './dto/update-toy.dto';
+import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class ToyService {
-  create(createToyDto: CreateToyDto) {
-    return 'This action adds a new toy';
+  db: PrismaService;
+
+  constructor(db: PrismaService) {
+    this.db = db;
+  }
+
+  async create(createToyDto: CreateToyDto) {
+    return await this.db.toy.create({
+      data: {
+        name: createToyDto.name,
+        material: createToyDto.material,
+        weight: createToyDto.weight,
+      },
+    });
   }
 
   findAll() {
-    return `This action returns all toy`;
+    return this.db.toy.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} toy`;
+  async findOne(id: number) {
+    try {
+      const toy = await this.db.toy.findUnique({
+        where: { toyID: id },
+      });
+      if (!toy) {
+        throw new NotFoundException(`Toy with ID ${id} not found`);
+      }
+      return toy;
+    } catch (error) {
+      console.error(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Failed to find toy with ID ${id}`);
+    }
   }
 
-  update(id: number, updateToyDto: UpdateToyDto) {
-    return `This action updates a #${id} toy`;
-  }
+  async update(id: number, updateToyDto: UpdateToyDto) {
+    try {
+      const toy = await this.db.toy.findUnique({
+        where: { toyID: id },
+      });
+      if (!toy) {
+        throw new NotFoundException(`Toy with ID ${id} not found`);
+      }
+      console.log(updateToyDto);
+      if (Object.keys(updateToyDto).length === 0) {
+        return {
+          status: 'fail',
+          message: `no data provided for update`,
+          code: 400,
+        };
+      }
 
-  remove(id: number) {
-    return `This action removes a #${id} toy`;
+      const data = await this.db.toy.update({
+        where: { toyID: id },
+        data: {
+          name: updateToyDto.name,
+          material: updateToyDto.material,
+          weight: updateToyDto.weight,
+        },
+      });
+      return {
+        status: 'success',
+        message: `Toy with ID ${id} updated successfully`,
+        data: data,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+    }
+  }
+  async remove(id: number) {
+    try {
+      const toy = await this.db.toy.findUnique({
+        where: { toyID: id },
+      });
+
+      if (!toy) {
+        throw new NotFoundException(`Toy with ID ${id} not found`);
+      }
+
+      await this.db.toy.delete({
+        where: { toyID: id },
+      });
+
+      return {
+        status: 'success',
+        message: `Toy with ID ${id} deleted successfully`,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      console.error(error);
+      throw new Error(`Failed to remove toy with ID ${id}`);
+    }
   }
 }
